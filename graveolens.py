@@ -8,7 +8,12 @@ except ImportError:
 from celery.app.task import Task
 from celery.result import AsyncResult
 
-__all__ = ['AsyncResultMock', 'CeleryMock']
+__all__ = ['AsyncResultMock', 'CeleryMock' 'NotMockedTask']
+
+
+class NotMockedTask(Exception):
+    """This task doesn't have a configured result."""
+
 
 class AsyncResultMock(AsyncResult):
     def __init__(self, result):
@@ -26,11 +31,11 @@ class CeleryMock(object):
 
     """
 
-    def __init__(self, assert_all_tasks_called=True, application=None):
+    def __init__(self, assert_all_tasks_called=True, app=None):
         self.assert_all_tasks_called = assert_all_tasks_called
-        self.application = application
+        self._app = app
         self._calls = []
-        self._patcher = None
+        self._patches = []
 
     def __enter__(self):
         self.start()
@@ -42,17 +47,27 @@ class CeleryMock(object):
     def start(self):
         """Patch the Celery app to intercept calls to Tasks."""
         # If an application was given, patch that instead of the base-class.
-        if self.application:
-            self._patcher = mock.patch.object(self.application,
-                                              'send_task',
-                                              new=self._send_task)
+        if self._app:
+            self._patches.append(mock.patch.object(self._app, 'send_task',
+                                                   new=self._send_task))
         else:
-            self._patcher = mock.patch('celery.app.base.Celery.send_task',
-                                       new=self._send_task)
-        self._patcher.start()
+            self._patches.append(mock.patch('celery.app.base.Celery.send_task',
+                                            new=self._send_task))
+
+        # Also capture apply, note that apply_async just ends up calling
+        # send_task on the app.
+        self._patches.append(
+            mock.patch('celery.app.task.Task.apply', new=self._get_apply()))
+
+        # Actually turn on the patches.
+        for patch in self._patches:
+            patch.start()
 
     def stop(self):
-        self._patcher.stop()
+        # Shut off all the patches.
+        for patch in self._patches:
+            patch.stop()
+
         if self.assert_all_tasks_called and self._calls:
             raise AssertionError(
                 'Not all tasks have been called {}'.format(self._calls))
@@ -67,6 +82,8 @@ class CeleryMock(object):
             task_name = task.name
         elif isinstance(task, (str, unicode)):
             task_name = str(task)
+
+        # TODO Ensure that the task exists in a celery app using app.
 
         # Generate an AsyncResult for the result.
         result = AsyncResultMock(result)
@@ -87,5 +104,13 @@ class CeleryMock(object):
                 self._calls.pop(i)
                 return result
 
-        else:
-            return None
+        # The task wasn't found, so no result is known. Raise an exception.
+        # TODO Can we behave more like Celery here?
+        raise NotMockedTask("No result available for task: %s" % name)
+
+    def _get_apply(self):
+        mock = self
+        def _apply(self, args=None, kwargs=None, link=None, link_error=None, **options):
+            return mock._send_task(self.name, args=args, kwargs=kwargs)
+
+        return _apply

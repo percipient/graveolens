@@ -5,31 +5,150 @@ import celery
 import graveolens
 
 app = celery.Celery('graveolens')
-#app.config_from_object('graveolens.settings', force=True)
+# Attempt to not use a broker.
+app.conf.update(
+    CELERY_ALWAYS_EAGER=True,
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS=True,
+    # But if we do hit the broker, for some reason, then timeout fast!
+    BROKER_CONNECTION_TIMEOUT=0,
+    BROKER_CONNECTION_RETRY=False,
+)
 
+class TestException(Exception):
+    """An exception used in tests."""
+
+@app.task
+def raising_task():
+    raise TestException("Task shouldn't be called.")
+
+
+class TestCelery(unittest.TestCase):
+    """Ensure that Celery is actually configured in a sane-ish way."""
+
+    def test_name(self):
+        """Ensure we know the proper name of the task."""
+        self.assertEqual(raising_task.name, 'graveolens.raising_task')
+
+    def test_call(self):
+        """Direct call skips celery."""
+        with self.assertRaises(TestException):
+            raising_task()
+
+    def test_delay(self):
+        """Delay is eager so resolves instantly."""
+        with self.assertRaises(TestException):
+            raising_task.delay()
+
+    def test_apply(self):
+        """Apply skips celery."""
+        with self.assertRaises(TestException):
+            raising_task.apply()
+
+    def test_apply_async(self):
+        """Apply async is eager so resolves instantly."""
+        with self.assertRaises(TestException):
+            raising_task.apply_async()
+
+    # TODO The following doesn't work. We could create another decorator in
+    #      graveolens that replaces send_task with direct look-ups. This works
+    #      well and is nice.
+    # See https://github.com/celery/celery/issues/581
+    @unittest.skip("Always eager doesn''t effect send_task.")
+    def test_send_task(self):
+        """Send task is eager so resolves instantly."""
+        with self.assertRaises(TestException):
+            app.send_task('graveolens.raising_task')
+
+    @unittest.skip("Always eager doesn''t effect send_task.")
+    def test_non_existant_send_task(self):
+        """Send task for a non-existant task raises a NotRegistered exception."""
+        app.send_task('foo.bar')
 
 
 class TestGraveolens(unittest.TestCase):
-    def test_result(self):
+    @unittest.skip('Not currently working.')
+    def test_call(self):
+        """Direct call skips celery return a mocked value."""
         with graveolens.CeleryMock() as mock:
-            mock.add('foo.bar', 'FOOBAR!')
-
-            result = app.send_task('foo.bar')
+            mock.add('graveolens.raising_task', 'foobar')
+            result = raising_task()
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.get(), 'FOOBAR!')
+            self.assertEqual(result.get(), 'foobar')
+
+    def test_delay(self):
+        """Delay returns a mocked value."""
+        with graveolens.CeleryMock() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = raising_task.delay()
+
+            self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.get(), 'foobar')
+
+    def test_apply(self):
+        """Apply returns a mocked value."""
+        with graveolens.CeleryMock() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = raising_task.apply()
+
+            self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.get(), 'foobar')
+
+    def test_apply_async(self):
+        """Apply async returns a mocked value."""
+        with graveolens.CeleryMock() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = raising_task.apply_async()
+
+            self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.get(), 'foobar')
+
+    def test_send_task(self):
+        """Send task returns a mocked value."""
+        with graveolens.CeleryMock() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = app.send_task('graveolens.raising_task')
+
+            self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.get(), 'foobar')
+
+    def test_non_existant_send_task(self):
+        """Send task for a value that was not configured raises an exception."""
+        with graveolens.CeleryMock() as mock:
+            with self.assertRaises(graveolens.NotMockedTask):
+                result = app.send_task('foo.bar')
+
+    @unittest.skip('Checking for tasks in the registry isn''t supported yet.')
+    def test_non_existant_add(self):
+        """Trying to return a value for a non-existant task should raise."""
+        with graveolens.CeleryMock() as mock:
+            with self.assertRaises(celery.exceptions.NotRegistered):
+                mock.add('foo.bar', 'foobar')
+
+    def test_unused_add(self):
+        """Not using all added results should raise."""
+        with self.assertRaises(AssertionError):
+            with graveolens.CeleryMock() as mock:
+                # Unused add.
+                mock.add('graveolens.raising_task', 'foobar')
+
+    def test_unused_add_no_exceptions(self):
+        """Not using all added results doesn't raise if not configured to."""
+        with graveolens.CeleryMock(assert_all_tasks_called=False) as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+
+        # Should still be calls in the buffer.
+        self.assertEqual(len(mock._calls), 1)
 
     def test_subclass_app(self):
-        with graveolens.CeleryMock(application=app) as mock:
-            mock.add('foo.bar', 'FOOBAR!')
+        # TODO Duplicate the above tests with providing a specific app.
+        with graveolens.CeleryMock(app=app) as mock:
+            mock.add('graveolens.raising_task', 'foobar')
 
-            result = app.send_task('foo.bar')
+            result = app.send_task('graveolens.raising_task')
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.get(), 'FOOBAR!')
-
-    def test_non_existant_task(self):
-        pass
+            self.assertEqual(result.get(), 'foobar')
 
 
 if __name__ == '__main__':
