@@ -1,0 +1,3 @@
+# Not trying to support 4 yet.
+celery>3<4a
+mock>=2.0.0
