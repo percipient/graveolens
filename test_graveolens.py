@@ -68,55 +68,50 @@ class TestCelery(unittest.TestCase):
 class TestGraveolens(unittest.TestCase):
     """Ensure that graveolens intercepts calls and returns the expected results."""
 
+    def assertResult(self, mock, result):
+        """Ensure that the mock and result are in the expected states."""
+        # Check that the result is as expected.
+        self.assertIsInstance(result, graveolens.AsyncResultMock)
+        self.assertEqual(result.state, celery.states.SUCCESS)
+        self.assertEqual(result.get(), 'foobar')
+
+        # Test that the task call was stored properly.
+        self.assertEqual(mock.calls[0], ('graveolens.raising_task', (), {}))
+
     def test_call(self):
         """Direct call skips celery return a mocked value."""
         with graveolens.CeleryMock() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task()
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
     def test_delay(self):
         """Delay returns a mocked value."""
         with graveolens.CeleryMock() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.delay()
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
     def test_apply(self):
         """Apply returns a mocked value."""
         with graveolens.CeleryMock() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.apply()
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
     def test_apply_async(self):
         """Apply async returns a mocked value."""
         with graveolens.CeleryMock() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.apply_async()
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
     def test_send_task(self):
         """Send task returns a mocked value."""
         with graveolens.CeleryMock() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = app.send_task('graveolens.raising_task')
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
     def test_non_existant_send_task(self):
         """Send task for a value that was not configured raises an exception."""
@@ -144,7 +139,7 @@ class TestGraveolens(unittest.TestCase):
             mock.add('graveolens.raising_task', 'foobar')
 
         # Should still be calls in the buffer.
-        self.assertEqual(len(mock._calls), 1)
+        self.assertEqual(len(mock._results), 1)
 
     def test_subclass_app(self):
         # TODO Duplicate the above tests with providing a specific app.
@@ -152,10 +147,7 @@ class TestGraveolens(unittest.TestCase):
             mock.add('graveolens.raising_task', 'foobar')
 
             result = app.send_task('graveolens.raising_task')
-
-            self.assertIsInstance(result, graveolens.AsyncResultMock)
-            self.assertEqual(result.state, celery.states.SUCCESS)
-            self.assertEqual(result.get(), 'foobar')
+            self.assertResult(mock, result)
 
 
 if __name__ == '__main__':

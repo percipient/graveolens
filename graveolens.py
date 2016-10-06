@@ -32,7 +32,12 @@ class CeleryMock(object):
     def __init__(self, assert_all_tasks_called=True, app=None):
         self.assert_all_tasks_called = assert_all_tasks_called
         self._app = app
-        self._calls = []
+
+        # Actual Celery calls that were intercepted.
+        self.calls = []
+        # The set of configured results to send back to task calls.
+        self._results = []
+        # Modifications to Celery.
         self._patches = []
 
     def __enter__(self):
@@ -69,9 +74,9 @@ class CeleryMock(object):
         for patch in self._patches:
             patch.stop()
 
-        if self.assert_all_tasks_called and self._calls:
+        if self.assert_all_tasks_called and self._results:
             raise AssertionError(
-                'Not all tasks have been called {}'.format(self._calls))
+                'Not all tasks have been called {}'.format(self._results))
 
     def add(self, task, result):
         """
@@ -89,7 +94,7 @@ class CeleryMock(object):
         # Generate an AsyncResult for the result.
         result = AsyncResultMock(result)
 
-        self._calls.append((task_name, result))
+        self._results.append((task_name, result))
 
     def _send_task(self, name, args=None, kwargs=None):
         """
@@ -98,11 +103,19 @@ class CeleryMock(object):
         TODO: Use args/kwargs in here.
 
         """
+        # Track that this task was called. Normalize the input to be empty
+        # tuples/dicts instead of sometimes None.
+        if args is None:
+            args = ()
+        if kwargs is None:
+            kwargs = {}
+        self.calls.append((name, args, kwargs))
+
         # Find the first instance of this task name.
-        for i, (task_name, result) in enumerate(self._calls):
+        for i, (task_name, result) in enumerate(self._results):
             if name == task_name:
                 # Don't re-use this result.
-                self._calls.pop(i)
+                self._results.pop(i)
                 return result
 
         # TODO If the task has ignore_result on, handle that.
