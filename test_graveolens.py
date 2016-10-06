@@ -75,6 +75,7 @@ class TestGraveolens(unittest.TestCase):
             result = raising_task()
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
     def test_delay(self):
@@ -84,6 +85,7 @@ class TestGraveolens(unittest.TestCase):
             result = raising_task.delay()
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
     def test_apply(self):
@@ -93,6 +95,7 @@ class TestGraveolens(unittest.TestCase):
             result = raising_task.apply()
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
     def test_apply_async(self):
@@ -102,6 +105,7 @@ class TestGraveolens(unittest.TestCase):
             result = raising_task.apply_async()
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
     def test_send_task(self):
@@ -111,6 +115,7 @@ class TestGraveolens(unittest.TestCase):
             result = app.send_task('graveolens.raising_task')
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
     def test_non_existant_send_task(self):
@@ -149,6 +154,7 @@ class TestGraveolens(unittest.TestCase):
             result = app.send_task('graveolens.raising_task')
 
             self.assertIsInstance(result, graveolens.AsyncResultMock)
+            self.assertEqual(result.state, celery.states.SUCCESS)
             self.assertEqual(result.get(), 'foobar')
 
 

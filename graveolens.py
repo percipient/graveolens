@@ -6,7 +6,8 @@ except ImportError:
     import mock
 
 from celery.app.task import Task
-from celery.result import AsyncResult
+from celery.result import EagerResult
+from celery import states
 
 __all__ = ['AsyncResultMock', 'CeleryMock' 'NotMockedTask']
 
@@ -15,14 +16,9 @@ class NotMockedTask(Exception):
     """This task doesn't have a configured result."""
 
 
-class AsyncResultMock(AsyncResult):
-    def __init__(self, result):
-        super(AsyncResultMock, self).__init__(id=uuid.uuid4())
-
-        self._result = result
-
-    def get(self, *args, **kwarg):
-        return self._result
+class AsyncResultMock(EagerResult):
+    def __init__(self, ret_value, state=states.SUCCESS):
+        super(AsyncResultMock, self).__init__(uuid.uuid4(), ret_value, state)
 
 
 class CeleryMock(object):
@@ -108,6 +104,8 @@ class CeleryMock(object):
                 # Don't re-use this result.
                 self._calls.pop(i)
                 return result
+
+        # TODO If the task has ignore_result on, handle that.
 
         # The task wasn't found, so no result is known. Raise an exception.
         # TODO Can we behave more like Celery here?
