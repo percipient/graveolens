@@ -85,7 +85,6 @@ class CeleryMock(object):
     def add(self, task, result):
         """
         task can be either a task name or a task object.
-        result can be a raw value or a 
 
         """
         if isinstance(task, Task):
