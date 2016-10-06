@@ -66,7 +66,8 @@ class TestCelery(unittest.TestCase):
 
 
 class TestGraveolens(unittest.TestCase):
-    @unittest.skip('Not currently working.')
+    """Ensure that graveolens intercepts calls and returns the expected results."""
+
     def test_call(self):
         """Direct call skips celery return a mocked value."""
         with graveolens.CeleryMock() as mock:

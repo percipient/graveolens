@@ -31,6 +31,8 @@ class CeleryMock(object):
 
     """
 
+    # TODO Add a flag for asserting on adding an unknown tasks.
+    # TODO Add a flag for asserting on calling an unknown task. (vs... calling the actual task?)
     def __init__(self, assert_all_tasks_called=True, app=None):
         self.assert_all_tasks_called = assert_all_tasks_called
         self._app = app
@@ -58,6 +60,9 @@ class CeleryMock(object):
         # send_task on the app.
         self._patches.append(
             mock.patch('celery.app.task.Task.apply', new=self._get_apply()))
+        # Also capture a direct call of the task.
+        self._patches.append(
+            mock.patch('celery.app.task.Task.__call__', new=self._get_apply()))
 
         # Actually turn on the patches.
         for patch in self._patches:
