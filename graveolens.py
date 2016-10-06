@@ -1,3 +1,4 @@
+from collections import namedtuple
 import uuid
 
 try:
@@ -19,6 +20,9 @@ class NotMockedTask(Exception):
 class AsyncResultMock(EagerResult):
     def __init__(self, ret_value, state=states.SUCCESS):
         super(AsyncResultMock, self).__init__(uuid.uuid4(), ret_value, state)
+
+
+Call = namedtuple('Call', ['name', 'args', 'kwargs'])
 
 
 class CeleryMock(object):
@@ -109,7 +113,7 @@ class CeleryMock(object):
             args = ()
         if kwargs is None:
             kwargs = {}
-        self.calls.append((name, args, kwargs))
+        self.calls.append(Call(name, args, kwargs))
 
         # Find the first instance of this task name.
         for i, (task_name, result) in enumerate(self._results):

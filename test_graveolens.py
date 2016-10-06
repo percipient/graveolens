@@ -76,6 +76,7 @@ class TestGraveolens(unittest.TestCase):
         self.assertEqual(result.get(), 'foobar')
 
         # Test that the task call was stored properly.
+        self.assertIsInstance(mock.calls[0], graveolens.Call)
         self.assertEqual(mock.calls[0], ('graveolens.raising_task', (), {}))
 
     def test_call(self):
