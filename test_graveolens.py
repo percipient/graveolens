@@ -127,6 +127,13 @@ class TestGraveolens(unittest.TestCase):
             with self.assertRaises(celery.exceptions.NotRegistered):
                 mock.add('foo.bar', 'foobar')
 
+    def test_add_task(self):
+        """Adding a task should work like a task name."""
+        with graveolens.CeleryMock() as mock:
+            mock.add(raising_task, 'foobar')
+            result = app.send_task('graveolens.raising_task')
+            self.assertResult(mock, result)
+
     def test_unused_add(self):
         """Not using all added results should raise."""
         with self.assertRaises(AssertionError):
