@@ -71,7 +71,7 @@ class TestGraveolens(unittest.TestCase):
     def assertResult(self, mock, result):
         """Ensure that the mock and result are in the expected states."""
         # Check that the result is as expected.
-        self.assertIsInstance(result, graveolens.AsyncResultMock)
+        self.assertIsInstance(result, celery.result.EagerResult)
         self.assertEqual(result.state, celery.states.SUCCESS)
         self.assertEqual(result.get(), 'foobar')
 

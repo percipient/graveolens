@@ -17,11 +17,6 @@ class NotMockedTask(Exception):
     """This task doesn't have a configured result."""
 
 
-class AsyncResultMock(EagerResult):
-    def __init__(self, ret_value, state=states.SUCCESS):
-        super(AsyncResultMock, self).__init__(uuid.uuid4(), ret_value, state)
-
-
 Call = namedtuple('Call', ['name', 'args', 'kwargs'])
 
 
@@ -82,7 +77,7 @@ class CeleryMock(object):
             raise AssertionError(
                 'Not all tasks have been called {}'.format(self._results))
 
-    def add(self, task, result):
+    def add(self, task, result, state=states.SUCCESS):
         """
         task can be either a task name or a task object.
 
@@ -95,7 +90,7 @@ class CeleryMock(object):
         # TODO Ensure that the task exists in a celery app using app.
 
         # Generate an AsyncResult for the result.
-        result = AsyncResultMock(result)
+        result = EagerResult(uuid.uuid4(), result, state)
 
         self._results.append((task_name, result))
 
