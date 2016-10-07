@@ -81,55 +81,55 @@ class TestGraveolens(unittest.TestCase):
 
     def test_call(self):
         """Direct call skips celery return a mocked value."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task()
             self.assertResult(mock, result)
 
     def test_delay(self):
         """Delay returns a mocked value."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.delay()
             self.assertResult(mock, result)
 
     def test_apply(self):
         """Apply returns a mocked value."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.apply()
             self.assertResult(mock, result)
 
     def test_apply_async(self):
         """Apply async returns a mocked value."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = raising_task.apply_async()
             self.assertResult(mock, result)
 
     def test_send_task(self):
         """Send task returns a mocked value."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add('graveolens.raising_task', 'foobar')
             result = app.send_task('graveolens.raising_task')
             self.assertResult(mock, result)
 
     def test_non_existant_send_task(self):
         """Send task for a value that was not configured raises an exception."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             with self.assertRaises(graveolens.NotMockedTask):
                 result = app.send_task('foo.bar')
 
     @unittest.skip('Checking for tasks in the registry isn''t supported yet.')
     def test_non_existant_add(self):
         """Trying to return a value for a non-existant task should raise."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             with self.assertRaises(celery.exceptions.NotRegistered):
                 mock.add('foo.bar', 'foobar')
 
     def test_add_task(self):
         """Adding a task should work like a task name."""
-        with graveolens.CeleryMock() as mock:
+        with graveolens.activate() as mock:
             mock.add(raising_task, 'foobar')
             result = app.send_task('graveolens.raising_task')
             self.assertResult(mock, result)
@@ -137,13 +137,13 @@ class TestGraveolens(unittest.TestCase):
     def test_unused_add(self):
         """Not using all added results should raise."""
         with self.assertRaises(AssertionError):
-            with graveolens.CeleryMock() as mock:
+            with graveolens.activate() as mock:
                 # Unused add.
                 mock.add('graveolens.raising_task', 'foobar')
 
     def test_unused_add_no_exceptions(self):
         """Not using all added results doesn't raise if not configured to."""
-        with graveolens.CeleryMock(assert_all_tasks_called=False) as mock:
+        with graveolens.activate(assert_all_tasks_called=False) as mock:
             mock.add('graveolens.raising_task', 'foobar')
 
         # Should still be calls in the buffer.
@@ -151,7 +151,7 @@ class TestGraveolens(unittest.TestCase):
 
     def test_subclass_app(self):
         # TODO Duplicate the above tests with providing a specific app.
-        with graveolens.CeleryMock(app=app) as mock:
+        with graveolens.activate(app=app) as mock:
             mock.add('graveolens.raising_task', 'foobar')
 
             result = app.send_task('graveolens.raising_task')

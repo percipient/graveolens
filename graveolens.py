@@ -10,7 +10,7 @@ from celery.app.task import Task
 from celery.result import EagerResult
 from celery import states
 
-__all__ = ['AsyncResultMock', 'CeleryMock' 'NotMockedTask']
+__all__ = ['AsyncResultMock', 'activate' 'NotMockedTask']
 
 
 class NotMockedTask(Exception):
@@ -133,3 +133,8 @@ class CeleryMock(object):
             return mock._send_task(self.name, args=args, kwargs=kwargs)
 
         return _apply
+
+
+def activate(*args, **kwargs):
+    """Give control of Celery to graveolens. Used as a context manager."""
+    return CeleryMock(*args, **kwargs)
