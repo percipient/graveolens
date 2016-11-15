@@ -10,7 +10,7 @@ def long_description():
 setup(
     name='graveolens',
     py_modules=['graveolens'],
-    version='0.1',
+    version='0.1.1',
     description='The missing test library for Celery.',
     long_description=long_description(),
     url='https://github.com/percipient/graveolens',
