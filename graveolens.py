@@ -43,8 +43,10 @@ class CeleryMock(object):
         self.start()
         return self
 
-    def __exit__(self, *args):
-        self.stop()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # If an exception was raised, ensure it is not shadowed by the
+        # AssertionError for all tasks being called.
+        self.stop(check_tasks=not exc_type)
 
     def start(self):
         """Patch the Celery app to intercept calls to Tasks."""
@@ -68,12 +70,16 @@ class CeleryMock(object):
         for patch in self._patches:
             patch.start()
 
-    def stop(self):
-        # Shut off all the patches.
+    def stop(self, check_tasks=True):
+        """
+        Shut off all the patches.
+
+        Optionally asserts that all tasks have been called.
+        """
         for patch in self._patches:
             patch.stop()
 
-        if self.assert_all_tasks_called and self._results:
+        if check_tasks and self.assert_all_tasks_called and self._results:
             raise AssertionError(
                 'Not all tasks have been called {}'.format(self._results))
 

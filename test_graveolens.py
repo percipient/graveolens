@@ -149,6 +149,18 @@ class TestGraveolens(unittest.TestCase):
         # Should still be calls in the buffer.
         self.assertEqual(len(mock._results), 1)
 
+    def test_unused_add_exception_pass_thru(self):
+        """
+        Exceptions raised in the context manager should pass through instead of
+        being shadowed by the exception from not using all results.
+        """
+        with self.assertRaises(TestException):
+            with graveolens.activate() as mock:
+                # Unused add.
+                mock.add('graveolens.raising_task', 'foobar')
+
+                raise TestException()
+
     def test_subclass_app(self):
         # TODO Duplicate the above tests with providing a specific app.
         with graveolens.activate(app=app) as mock:
