@@ -10,16 +10,20 @@ The missing test library for the `Celery`_ Python library. Some of the things gr
 
 .. _Celery: http://www.celeryproject.org/
 
+The binomial name for celery is `Apium graveolens`_.
+
+.. _Apium graveolens: https://en.wikipedia.org/wiki/Celery
+
 Returning Results
 =================
 
 .. code-block:: python
 
     from my_app.celery import app
-    import gravelons
+    import graveolens
 
     def test_my_task():
-        with gravelons.activate() as celery:
+        with graveolens.activate() as celery:
             celery.add('my_app.task', {'done': True, 'status': 'OK'})
 
             result = app.send_task('my_app.task', 'test', id=3)
@@ -41,10 +45,10 @@ when the context manager exits, e.g.:
 
 .. code-block:: python
 
-    import gravelons
+    import graveolens
 
     def test_my_task():
-        with gravelons.activate() as celery:
+        with graveolens.activate() as celery:
             celery.add('my_app.task')
 
         # Assertion will be raised here because 'my_app.task' is never called.
@@ -58,10 +62,10 @@ Additionally, if a Celery task is called without having a result set-up then
 .. code-block:: python
 
     from my_app.celery import app
-    import gravelons
+    import graveolens
 
     def test_my_task():
-        with gravelons.activate() as celery:
+        with graveolens.activate() as celery:
             try:
                 result = app.send_task('my_app.task', 'test', id=3)
             except graveolens.NotMockedTask:
