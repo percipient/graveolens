@@ -17,7 +17,7 @@ class NotMockedTask(Exception):
     """This task doesn't have a configured result."""
 
 
-Call = namedtuple('Call', ['name', 'args', 'kwargs'])
+Call = namedtuple('Call', ['name', 'args', 'kwargs', 'argsrepr', 'kwargsrepr'])
 
 
 class CeleryMock(object):
@@ -100,7 +100,7 @@ class CeleryMock(object):
 
         self._results.append((task_name, result))
 
-    def _send_task(self, name, args=None, kwargs=None):
+    def _send_task(self, name, args=None, kwargs=None, argsrepr=None, kwargsrepr=None):
         """
         The magic, lookup the task name, and return the result!
 
@@ -113,7 +113,7 @@ class CeleryMock(object):
             args = ()
         if kwargs is None:
             kwargs = {}
-        self.calls.append(Call(name, args, kwargs))
+        self.calls.append(Call(name, args, kwargs, argsrepr, kwargsrepr))
 
         # Find the first instance of this task name.
         for i, (task_name, result) in enumerate(self._results):

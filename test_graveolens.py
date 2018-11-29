@@ -53,13 +53,13 @@ class TestCelery(unittest.TestCase):
     #      graveolens that replaces send_task with direct look-ups. This works
     #      well and is nice.
     # See https://github.com/celery/celery/issues/581
-    @unittest.skip("Always eager doesn''t effect send_task.")
+    @unittest.skip("Always eager doesn't effect send_task.")
     def test_send_task(self):
         """Send task is eager so resolves instantly."""
         with self.assertRaises(TestException):
             app.send_task('graveolens.raising_task')
 
-    @unittest.skip("Always eager doesn''t effect send_task.")
+    @unittest.skip("Always eager doesn't effect send_task.")
     def test_non_existant_send_task(self):
         """Send task for a non-existant task raises a NotRegistered exception."""
         app.send_task('foo.bar')
@@ -68,7 +68,7 @@ class TestCelery(unittest.TestCase):
 class TestGraveolens(unittest.TestCase):
     """Ensure that graveolens intercepts calls and returns the expected results."""
 
-    def assertResult(self, mock, result):
+    def assertResult(self, mock, result, args=(), kwargs={}, argsrepr=None, kwargsrepr=None):
         """Ensure that the mock and result are in the expected states."""
         # Check that the result is as expected.
         self.assertIsInstance(result, celery.result.EagerResult)
@@ -77,7 +77,7 @@ class TestGraveolens(unittest.TestCase):
 
         # Test that the task call was stored properly.
         self.assertIsInstance(mock.calls[0], graveolens.Call)
-        self.assertEqual(mock.calls[0], ('graveolens.raising_task', (), {}))
+        self.assertEqual(mock.calls[0], ('graveolens.raising_task', args, kwargs, argsrepr, kwargsrepr))
 
     def test_call(self):
         """Direct call skips celery return a mocked value."""
@@ -114,13 +114,43 @@ class TestGraveolens(unittest.TestCase):
             result = app.send_task('graveolens.raising_task')
             self.assertResult(mock, result)
 
+    def test_send_task_args(self):
+        """Send task returns a mocked value."""
+        with graveolens.activate() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = app.send_task('graveolens.raising_task', args=('test',))
+            self.assertResult(mock, result, args=('test',))
+
+    def test_send_task_kwargs(self):
+        """Send task returns a mocked value."""
+        with graveolens.activate() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = app.send_task('graveolens.raising_task', kwargs={'test': True})
+            self.assertResult(mock, result, kwargs={'test': True})
+
+
+    def test_send_task_argsrepr(self):
+        """Send task returns a mocked value."""
+        with graveolens.activate() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = app.send_task('graveolens.raising_task', args=('test',), argsrepr='test')
+            self.assertResult(mock, result, args=('test',), argsrepr='test')
+
+    def test_send_task_kwargsrepr(self):
+        """Send task returns a mocked value."""
+        with graveolens.activate() as mock:
+            mock.add('graveolens.raising_task', 'foobar')
+            result = app.send_task('graveolens.raising_task', kwargs={'test': True}, kwargsrepr='test')
+            self.assertResult(mock, result, kwargs={'test': True}, kwargsrepr='test')
+
+
     def test_non_existant_send_task(self):
         """Send task for a value that was not configured raises an exception."""
         with graveolens.activate() as mock:
             with self.assertRaises(graveolens.NotMockedTask):
                 result = app.send_task('foo.bar')
 
-    @unittest.skip('Checking for tasks in the registry isn''t supported yet.')
+    @unittest.skip("Checking for tasks in the registry isn't supported yet.")
     def test_non_existant_add(self):
         """Trying to return a value for a non-existant task should raise."""
         with graveolens.activate() as mock:
