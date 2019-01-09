@@ -1,3 +1,13 @@
+0.1.3 January 8, 2019
+=====================
+
+* Support ignore_result as an argument to send_task.
+
+0.1.2 November 29, 2018
+=======================
+
+* Support argsrepr and kwargsrepr as arguments to send_task.
+
 0.1.1 November 15, 2016
 =======================
 
