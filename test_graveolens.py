@@ -68,7 +68,7 @@ class TestCelery(unittest.TestCase):
 class TestGraveolens(unittest.TestCase):
     """Ensure that graveolens intercepts calls and returns the expected results."""
 
-    def assertResult(self, mock, result, args=(), kwargs={}, argsrepr=None, kwargsrepr=None):
+    def assertResult(self, mock, result, args=(), kwargs={}, argsrepr=None, kwargsrepr=None, ignoreresult=None):
         """Ensure that the mock and result are in the expected states."""
         # Check that the result is as expected.
         self.assertIsInstance(result, celery.result.EagerResult)
@@ -77,7 +77,7 @@ class TestGraveolens(unittest.TestCase):
 
         # Test that the task call was stored properly.
         self.assertIsInstance(mock.calls[0], graveolens.Call)
-        self.assertEqual(mock.calls[0], ('graveolens.raising_task', args, kwargs, argsrepr, kwargsrepr))
+        self.assertEqual(mock.calls[0], ('graveolens.raising_task', args, kwargs, argsrepr, kwargsrepr, ignoreresult))
 
     def test_call(self):
         """Direct call skips celery return a mocked value."""
