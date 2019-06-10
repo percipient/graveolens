@@ -10,7 +10,7 @@ def long_description():
 setup(
     name='graveolens',
     py_modules=['graveolens'],
-    version='0.1.3',
+    version='0.1.4',
     description='The missing test library for Celery.',
     long_description=long_description(),
     url='https://github.com/percipient/graveolens',
@@ -19,8 +19,7 @@ setup(
     author_email='support@strongarm.io',
     license='Apache 2.0',
     install_requires=[
-        # Not yet tested with Celery 4.
-        'celery>3<4a',
+        'celery>3',
         'mock>=2.0.0',
     ],
     classifiers=[
